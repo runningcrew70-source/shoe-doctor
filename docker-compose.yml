@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  # Next.js 웹 애플리케이션
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000" # 로컬에서 http://localhost:3000 으로 접속
+    volumes:
+      - .:/app # 소스 코드 실시간 반영 (Hot Reload)
+      - /app/node_modules # 호스트의 node_modules 무시 (컨테이너 내부 것 사용)
+      - /app/.next # 빌드 캐시는 컨테이너 내부 전용
+    environment:
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true # Docker에서 파일 변경 감지 (macOS 호환)
+    env_file:
+      - .env.local # OpenAI API Key 등 시크릿 (.dockerignore에서 빌드 시 제외, 런타임에만 주입)

@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 기존 MVP 스타일 CSS 통합 (점진적 Tailwind 마이그레이션 예정) */
+@import '../style.css';
+
+/* Tailwind와 기존 CSS 충돌 방지를 위한 보정 */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
