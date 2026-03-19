@@ -37,3 +37,18 @@ export interface AnalyzeRequest {
 export interface AnalyzeError {
     error: string;
 }
+
+// 축적 데이터 통계 인터페이스
+export interface GlobalStats {
+    totalAnalyses: number;
+    avgWear: number;
+    neutralPct: number;
+    overpronationPct: number;
+    supinationPct: number;
+}
+
+export interface ModelStats {
+    model: string;
+    avgWear: number;
+    count: number;
+}

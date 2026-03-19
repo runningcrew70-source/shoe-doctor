@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
-import { SYSTEM_PROMPT, USER_PROMPT } from '@/lib/prompts';
+import { buildSystemPrompt, USER_PROMPT } from '@/lib/prompts';
+import { supabaseAdmin } from '@/lib/supabase';
+import { getGlobalStats, getModelStats } from '@/lib/stats';
 
 // ============================================================
 // Rate Limiting (인메모리 — IP당 분당 5회)
@@ -31,6 +33,18 @@ function validateBase64Image(data: unknown): data is string {
     if (typeof data !== 'string') return false;
     if (!data.startsWith('data:image/')) return false;
     return true;
+}
+
+// ============================================================
+// Base64 → Buffer 변환 (Supabase Storage 업로드용)
+// ============================================================
+function base64ToBuffer(base64: string): { buffer: Buffer; mimeType: string } {
+    const matches = base64.match(/^data:(image\/\w+);base64,(.+)$/);
+    if (!matches) throw new Error('Invalid base64 image');
+    return {
+        buffer: Buffer.from(matches[2], 'base64'),
+        mimeType: matches[1],
+    };
 }
 
 // ============================================================
@@ -76,7 +90,19 @@ export async function POST(req: Request) {
             );
         }
 
-        // 4. OpenAI API 호출
+        // 4. 축적 데이터 통계 가져오기 (실패해도 분석은 진행)
+        let globalStats = { totalAnalyses: 0, avgWear: 0, neutralPct: 0, overpronationPct: 0, supinationPct: 0 };
+        try {
+            globalStats = await getGlobalStats();
+            console.log(`[Stats] 축적 데이터 ${globalStats.totalAnalyses}건 기반 프롬프트 생성`);
+        } catch (err) {
+            console.warn('[Stats] 통계 조회 실패, 기본 프롬프트 사용:', err);
+        }
+
+        // 5. 동적 시스템 프롬프트 생성
+        const systemPrompt = buildSystemPrompt(globalStats);
+
+        // 6. OpenAI API 호출
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -86,7 +112,7 @@ export async function POST(req: Request) {
             body: JSON.stringify({
                 model: 'gpt-4o',
                 messages: [
-                    { role: 'system', content: SYSTEM_PROMPT },
+                    { role: 'system', content: systemPrompt },
                     {
                         role: 'user',
                         content: [
@@ -107,7 +133,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: message }, { status: response.status });
         }
 
-        // 5. 응답 파싱 (JSON.parse 분리된 에러 핸들링)
+        // 7. 응답 파싱
         const data = await response.json();
         const content = data?.choices?.[0]?.message?.content;
 
@@ -129,6 +155,65 @@ export async function POST(req: Request) {
             );
         }
 
+        // ============================================================
+        // 8. 데이터 수집: 이미지 & 분석 결과를 Supabase에 저장
+        //    저장 실패 시 로그만 남기고 사용자에게는 정상 응답 반환
+        // ============================================================
+        try {
+            const timestamp = Date.now();
+            const sideImagePath = `analyses/${timestamp}_side.jpg`;
+            const outsoleImagePath = `analyses/${timestamp}_outsole.jpg`;
+
+            // 이미지를 Supabase Storage에 업로드
+            const sideData = base64ToBuffer(sideImageBase64);
+            const outsoleData = base64ToBuffer(outsoleImageBase64);
+
+            await Promise.all([
+                supabaseAdmin.storage.from('shoe-images').upload(sideImagePath, sideData.buffer, {
+                    contentType: sideData.mimeType,
+                    upsert: false,
+                }),
+                supabaseAdmin.storage.from('shoe-images').upload(outsoleImagePath, outsoleData.buffer, {
+                    contentType: outsoleData.mimeType,
+                    upsert: false,
+                }),
+            ]);
+
+            // 분석 결과의 gait_type 추출 (프롬프트에서 요청한 필드)
+            const diagnosis = result?.diagnosis;
+            let gaitType = diagnosis?.gait_type ?? null;
+
+            // gait_type이 없으면 section_2_gait 텍스트에서 추론
+            if (!gaitType && diagnosis?.section_2_gait) {
+                const gaitText = diagnosis.section_2_gait.toLowerCase();
+                if (gaitText.includes('supination') || gaitText.includes('회외')) gaitType = 'Supination';
+                else if (gaitText.includes('overpronation') || gaitText.includes('과회내') || gaitText.includes('pronation')) gaitType = 'Overpronation';
+                else if (gaitText.includes('neutral') || gaitText.includes('중립')) gaitType = 'Neutral';
+            }
+
+            // 분석 결과를 DB에 저장
+            const { error: dbError } = await supabaseAdmin.from('analyses').insert({
+                side_image_path: sideImagePath,
+                outsole_image_path: outsoleImagePath,
+                brand: result?.model_info?.brand ?? null,
+                model: result?.model_info?.model ?? null,
+                wear_percentage: diagnosis?.wear_percentage ?? null,
+                gait_type: gaitType,
+                life_status: diagnosis?.life_status ?? null,
+                raw_result: result,
+                ip_address: ip,
+            });
+
+            if (dbError) {
+                console.error('[DB] 저장 실패:', dbError.message);
+            } else {
+                console.log(`[DB] 분석 결과 저장 완료 (${result?.model_info?.brand} ${result?.model_info?.model})`);
+            }
+        } catch (saveError) {
+            console.error('[Data Collection] 저장 중 오류 (분석 결과는 정상 반환):', saveError);
+        }
+
+        // 9. 사용자에게 분석 결과 반환 (저장 성공/실패와 무관)
         return NextResponse.json(result);
 
     } catch (error: any) {
