@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { trackShare } from '@/lib/analytics';
 
 interface ShareButtonsProps {
     title: string;
@@ -28,6 +29,7 @@ export default function ShareButtons({ title, description }: ShareButtonsProps) 
                     text: description,
                     url: getShareUrl(),
                 });
+                trackShare('native');
             } catch (err: any) {
                 // 사용자가 취소한 경우 무시
                 if (err.name !== 'AbortError') {
@@ -44,12 +46,14 @@ export default function ShareButtons({ title, description }: ShareButtonsProps) 
     const handleTwitterShare = () => {
         const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(getShareUrl())}`;
         window.open(url, '_blank', 'width=600,height=400');
+        trackShare('twitter');
     };
 
     // 페이스북 공유
     const handleFacebookShare = () => {
         const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getShareUrl())}&quote=${encodeURIComponent(shareText)}`;
         window.open(url, '_blank', 'width=600,height=400');
+        trackShare('facebook');
     };
 
     // URL 복사
@@ -58,6 +62,7 @@ export default function ShareButtons({ title, description }: ShareButtonsProps) 
             await navigator.clipboard.writeText(getShareUrl());
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
+            trackShare('url_copy');
         } catch {
             const textarea = document.createElement('textarea');
             textarea.value = getShareUrl();
@@ -67,6 +72,7 @@ export default function ShareButtons({ title, description }: ShareButtonsProps) 
             document.body.removeChild(textarea);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
+            trackShare('url_copy');
         }
     };
 

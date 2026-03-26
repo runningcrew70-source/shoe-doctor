@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
 import { AnalysisResult, Recommendation } from '@/types/analysis';
 import ShareButtons from '@/components/ShareButtons';
+import { trackImageSave } from '@/lib/analytics';
 
 interface Props {
     result: AnalysisResult;
@@ -59,6 +60,7 @@ export default function ResultView({ result, sideImage, outsoleImage, onReset }:
             link.download = `shoe-doctor-${brandName}-${modelName}.png`;
             link.href = dataUrl;
             link.click();
+            trackImageSave();
         } catch (err) {
             console.error('이미지 저장 실패:', err);
             alert('이미지 저장에 실패했습니다. 다시 시도해주세요.');

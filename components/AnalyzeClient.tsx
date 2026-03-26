@@ -5,6 +5,7 @@ import DropZone from '@/components/DropZone';
 import ResultView from '@/components/ResultView';
 import { AnalysisResult } from '@/types/analysis';
 import { resizeImageBase64 } from '@/lib/imageUtils';
+import { trackAnalysisStart, trackAnalysisComplete } from '@/lib/analytics';
 
 export default function AnalyzeClient() {
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
@@ -17,6 +18,7 @@ export default function AnalyzeClient() {
     const handleAnalyze = async () => {
         if (!sideImage || !outsoleImage) return;
         setIsAnalyzing(true);
+        trackAnalysisStart();
 
         try {
             // 이미지 리사이징 (API 비용 절감)
@@ -37,6 +39,13 @@ export default function AnalyzeClient() {
             if (!res.ok) throw new Error(data.error);
 
             setAnalysisResult(data as AnalysisResult);
+            // GA4 분석 완료 이벤트
+            const result = data as AnalysisResult;
+            trackAnalysisComplete(
+                result.model_info?.brand ?? 'Unknown',
+                result.model_info?.model ?? 'Unknown',
+                result.diagnosis?.wear_percentage ?? 0,
+            );
         } catch (err: any) {
             alert('분석 중 오류 발생: ' + err.message);
         } finally {

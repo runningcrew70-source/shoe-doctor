@@ -1,6 +1,7 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
 import Navbar from '@/components/Navbar';
+import GoogleAnalytics from '@/components/GoogleAnalytics';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -32,6 +33,7 @@ export default function RootLayout({
     return (
         <html lang="ko" className={inter.className}>
             <body>
+                <GoogleAnalytics />
                 <div id="app">
                     <Navbar />
                     {children}
