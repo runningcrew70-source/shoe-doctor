@@ -1087,3 +1087,228 @@ footer {
     background-color: #00ff00;
     /* Default green, driven by JS inline style */
 }
+
+/* === Share Buttons === */
+.share-section {
+    margin: 35px 0 10px 0;
+    padding: 25px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    text-align: center;
+}
+
+.share-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 18px;
+    letter-spacing: -0.3px;
+}
+
+.share-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.share-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    font-family: var(--font-main);
+    letter-spacing: -0.2px;
+}
+
+.share-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.share-btn:active {
+    transform: translateY(0);
+}
+
+.share-btn.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.share-btn.disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* 공유하기 (Web Share API) */
+.share-btn-native {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+}
+
+.share-btn-native:hover {
+    background: linear-gradient(135deg, #5a6fd6, #6a4293);
+}
+
+/* 트위터 (X) */
+.share-btn-twitter {
+    background: #000;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.share-btn-twitter:hover {
+    background: #1a1a1a;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* 페이스북 */
+.share-btn-facebook {
+    background: #1877F2;
+    color: #fff;
+}
+
+.share-btn-facebook:hover {
+    background: #1565d8;
+}
+
+/* URL 복사 */
+.share-btn-copy {
+    background: rgba(204, 255, 0, 0.15);
+    color: var(--color-primary);
+    border: 1px solid rgba(204, 255, 0, 0.3);
+}
+
+.share-btn-copy:hover {
+    background: rgba(204, 255, 0, 0.25);
+}
+
+.share-btn-copy.copied {
+    background: rgba(0, 255, 0, 0.2);
+    color: #00ff00;
+    border-color: #00ff00;
+    animation: copiedPulse 0.3s ease;
+}
+
+@keyframes copiedPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* 모바일 반응형 */
+@media (max-width: 600px) {
+    .share-buttons {
+        gap: 8px;
+    }
+
+    .share-btn {
+        padding: 10px 14px;
+        font-size: 0.78rem;
+        flex: 1 1 calc(50% - 8px);
+        justify-content: center;
+        min-width: 0;
+    }
+
+    .share-btn span {
+        display: inline;
+    }
+}
+
+@media (max-width: 380px) {
+    .share-btn {
+        flex: 1 1 100%;
+    }
+}
+
+/* medical-chart-container 내부 share-section 스타일 오버라이드 */
+.medical-chart-container + .share-section,
+.result-data .share-section {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+.result-data .share-title {
+    color: #333;
+}
+
+/* === Image Capture & Save === */
+.capture-area {
+    position: relative;
+    padding: 0 0 15px 0;
+}
+
+.capture-watermark {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    margin-top: 10px;
+}
+
+.watermark-logo {
+    font-weight: 900;
+    font-style: italic;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.4);
+    letter-spacing: -0.5px;
+}
+
+.watermark-url {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.3);
+    font-weight: 600;
+}
+
+.save-image-btn {
+    width: 100%;
+    padding: 16px;
+    margin: 15px 0;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: var(--font-main);
+    cursor: pointer;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24, #f0932b);
+    color: #fff;
+    transition: all 0.3s ease;
+    letter-spacing: -0.3px;
+}
+
+.save-image-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(238, 90, 36, 0.4);
+}
+
+.save-image-btn:active {
+    transform: translateY(0);
+}
+
+.save-image-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+    animation: savePulse 1.5s infinite;
+}
+
+@keyframes savePulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+}
+
+/* 모바일 */
+@media (max-width: 600px) {
+    .save-image-btn {
+        font-size: 0.9rem;
+        padding: 14px;
+    }
+}
